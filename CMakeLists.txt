@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(fluent-bit-plugins-ext)
-set(FLB_SOURCE /home/darren/developer/c/fluent-bit/)
+set(FLB_SOURCE ../fluent-bit/)
 set(PLUGIN_NAME out_stdout2)
 
 
