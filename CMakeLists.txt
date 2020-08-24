@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(fluent-bit-plugins-ext)
 set(FLB_SOURCE ../fluent-bit/)
-set(PLUGIN_NAME out_stdout2)
+set(PLUGIN_NAME in_metadata)
 
 
 # Macro to build source code
@@ -37,4 +37,4 @@ add_subdirectory(${PLUGIN_NAME})
 
 #Add plugins
 add_subdirectory(in_cpu)
-add_subdirectory(in_metadata)
+#add_subdirectory(in_metadata)
