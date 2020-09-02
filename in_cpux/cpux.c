@@ -401,7 +401,7 @@ static int cb_cpux_collect(struct flb_input_instance *ins,
     ctx->procstats=list;
 
 
-    printf("Writing data bytes=%i\n", mp_sbuf.size);
+    printf("Writing data bytes=%ull\n", mp_sbuf.size);
     flb_input_chunk_append_raw(ins, NULL, 0, mp_sbuf.data, mp_sbuf.size);
     msgpack_sbuffer_destroy(&mp_sbuf);
 
