@@ -260,7 +260,7 @@ DICT * parse_into_dict(FILE *fp,char * repattern,DICT * dict){
             if (groupArray[2].rm_so != (size_t) -1) {
                 char *key = strndup(buf+groupArray[1].rm_so, groupArray[1].rm_eo - groupArray[1].rm_so);
                 char *val = strndup(buf+groupArray[2].rm_so, groupArray[2].rm_eo - groupArray[2].rm_so);
-                dict_put_kvp(dict, trim(key, NULL), trim(val, NULL), CHAR);
+                dict_put_kvp(dict, trim(key, NULL), trim(val, NULL), STRING);
                 free(key);
                 free(val);
             }

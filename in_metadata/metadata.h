@@ -2,6 +2,8 @@
 #define CAPM_METADATA_H
 
 
+#include <kvp.h>
+
 #define IS_POWER  1
 #define IS_AMD64 2
 #define IS_ARM 4
@@ -14,4 +16,10 @@ typedef struct flb_metadata {
     struct flb_input_instance *ins;
     int counter;
 }flb_metadata;
+
+
+typedef struct meta_fns {
+    char * name ;
+    PDICT (*dict_fn)(void) ;
+}meta_fns;
 #endif

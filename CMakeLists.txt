@@ -3,6 +3,7 @@ project(fluent-bit-plugins-ext)
 set(FLB_SOURCE ../fluent-bit/)
 set(PLUGIN_NAME in_metadata)
 
+include_directories(include)
 
 # Macro to build source code
 macro(FLB_PLUGIN name src deps)
@@ -36,5 +37,8 @@ include(${FLB_SOURCE}/cmake/headers.cmake)
 add_subdirectory(${PLUGIN_NAME})
 
 #Add plugins
-add_subdirectory(in_cpu)
+add_subdirectory(in_cpux)
+add_subdirectory(in_procx)
+add_subdirectory(in_tailx)
+add_subdirectory(out_stdout2)
 #add_subdirectory(in_metadata)

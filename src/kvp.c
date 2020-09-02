@@ -36,11 +36,14 @@ void dict_free(DICT *dict, unsigned int recursive) {
             if (node->value) {
                 switch (node->type) {
                     case PTR :
-                        break;
-                    case CHAR:
+                    case LONG :
+                    case CHAR :
+                        break; //references not owned by us
+                    case STRING:
                     case DOUBLE:
                     case LONGLONG :
-                        free(node->value);
+                    case FREEABLE_PTR:
+                        free(node->value); //we alloc'd this memory so we free it
                         break;
                     case DICTREF :
                         if (recursive) {
@@ -60,7 +63,7 @@ void dict_free(DICT *dict, unsigned int recursive) {
    free(dict);
 }
 
-int ensure_capacity(DICT *dict) {
+int dict_ensure_capacity(DICT *dict) {
     const int to_add = 16;
 
     if (dict->count == dict->length) {
@@ -106,31 +109,87 @@ PENTRY dict_entry_create(char *key, void *value, enum value_type type) {
         return NULL;
     }
     entry->key = (key) ? strdup(key) : strdup("");  //todo const char NULL_KEY rather than ""
+    entry->keylen=strlen(entry->key);
     entry->type = type;
     switch (type) {
         case DICTREF :
         case PTR :
+        case FREEABLE_PTR:
+        case DOUBLE :
+        case LONGLONG :
             entry->value = value;
+            entry->vallen = sizeof(value);
+            break;
+        case STRING :
+            entry->value = (value) ? strdup(value) : NULL;
+            entry->vallen = strlen(entry->value);
+            break;
+        case LONG :
+            entry->value=value;
+            entry->vallen=sizeof(long );
             break;
         case CHAR :
-            entry->value = (value) ? strdup(value) : NULL;
+            entry->value=value;
+            entry->vallen=1;
             break;
-        default  :
-            //FIX ME . Currently we pass in formatted char * rather than raw value.. This needs to change
-            entry->value = (value) ? strdup(value) : NULL;
-            break;
+        default:
+            assert("Unknown"=="hardfail");
     }
     return entry;
 }
 
+/* No checks for existing keys / merge */
+DICT * dict_merge(DICT *dest , DICT *src){
+    if (src && dest){
 
+        for (int i = 0, todo = src->count; i < todo; i++) {
+            dict_put(dest,src->entry[i]);
+        }
+    }
+    return dest;
+}
 
-DICT *dict_put_kvp(DICT *dict, char *key, char *value, enum value_type type) {
+DICT *dict_put_kvp(DICT *dict, char *key, void *value, enum value_type type) {
     if (!dict){
         return NULL;
     }
     return dict_put(dict, dict_entry_create(key, value, type));
 
+}
+
+DICT *dict_put_long(DICT *dict, char *key,long value){
+    if (!dict){
+        return NULL;
+    }
+    return dict_put(dict, dict_entry_create(key, (void *)value, LONG));
+}
+
+DICT *dict_put_double(DICT *dict, char *key,double value){
+    if (!dict){
+        return NULL;
+    }
+    double * pDouble = malloc(sizeof(double ));
+    (*pDouble)=value;
+
+    return dict_put(dict, dict_entry_create(key, pDouble, DOUBLE));
+}
+
+DICT *dict_put_longlong(DICT *dict, char *key,long long value){
+    if (!dict){
+        return NULL;
+    }
+    long long * pll = malloc(sizeof(long long ));
+    (*pll)=value;
+
+    return dict_put(dict, dict_entry_create(key, pll, DOUBLE));
+}
+
+DICT *dict_put_str(DICT *dict, char *key,char * value){
+    return dict_put_kvp(dict, key, value, STRING);
+}
+
+DICT *dict_put_char(DICT *dict, char *key,char  value){
+    return dict_put_kvp(dict, key, (void *)value, CHAR);
 }
 
 DICT *dict_put(DICT *dict, ENTRY *entry) {
@@ -139,7 +198,7 @@ DICT *dict_put(DICT *dict, ENTRY *entry) {
     }
 
     unsigned int todo;
-    if (ensure_capacity(dict)) {
+    if (dict_ensure_capacity(dict)) {
         dict->entry[dict->count]=entry;
         dict->count++;
     }
@@ -174,35 +233,3 @@ void *dict_get(DICT *dict, char *key) {
 
 }
 
-
-
-int dict_to_msgpack(DICT * dict,msgpack_packer * mp_pck) {
-    int tmpint = 0;
-
-
-    msgpack_pack_map (mp_pck,dict->count);
-
-    for (int i = 0, todo = dict->count; i < todo; i++) {
-        PENTRY entry = dict->entry[i];
-        if (entry->type == DICTREF) {
-            dict_to_msgpack((DICT *) entry->value, mp_pck);
-        } else {
-            /* append new keys */
-            tmpint = strlen(entry->key);
-            msgpack_pack_str(mp_pck, tmpint);
-            msgpack_pack_str_body(mp_pck, entry->key, tmpint);
-            switch (entry->type) {
-                case CHAR :
-                    tmpint = strlen(entry->value);
-                    msgpack_pack_str(mp_pck, tmpint);
-                    msgpack_pack_str_body(mp_pck, entry->value, tmpint);
-                    break;
-                default:
-                    //not implemented
-                    assert(false);
-
-            }
-        }
-    }
-    return 0;
-}
