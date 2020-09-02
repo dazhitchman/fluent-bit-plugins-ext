@@ -545,6 +545,12 @@ static struct flb_config_map config_map[] = {
      "long lines and continue processing other lines that fits into the buffer."
     },
     {
+            FLB_CONFIG_MAP_BOOL, "ignore_glob_errors", "false",
+            0, FLB_TRUE, offsetof(struct flb_tail_config, ignore_glob_errors),
+            "if a glob path returns an error, contine anyway "
+            ", the default behavior is to stop ."
+    },
+    {
      FLB_CONFIG_MAP_BOOL, "exit_on_eof", "false",
      0, FLB_TRUE, offsetof(struct flb_tail_config, exit_on_eof),
      "exit Fluent Bit when reaching EOF on a monitored file."
