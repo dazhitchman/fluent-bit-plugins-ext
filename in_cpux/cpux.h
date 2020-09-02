@@ -166,21 +166,4 @@ static inline double CPU_METRIC_SYS_AVERAGE(unsigned long pre,
 
 
 
-/* Returns the CPU % utilization of a given CPU core */
-static inline double CPU_METRIC_PID_USAGE(unsigned long pre, unsigned long now,
-                                          struct flb_cpu *ctx)
-{
-    double diff;
-    double total = 0;
-
-    if (pre == now) {
-        return 0.0;
-    }
-
-    diff = ULL_ABS(now, pre);
-    total = 100.0 * ((diff / ctx->cpu_ticks) / (ctx->interval_sec + 1e-9*ctx->interval_nsec));
-
-    return total;
-}
-
 #endif

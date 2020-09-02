@@ -64,7 +64,7 @@ char *get_uptime(char *buf) {
         }else {
             sprintf(buf, "%lf",uptime);
         }
-        close(fp);
+        fclose(fp);
     }
     return buf;
 }
@@ -100,7 +100,7 @@ DICT *get_interfaces() {
                             host, NI_MAXHOST,
                             NULL, 0, NI_NUMERICHOST);
             if (s == 0) {
-                dict_put_kvp(interface, (family == AF_INET) ? "inet" : "inet6", host, STR);
+                dict_put_kvp(interface, (family == AF_INET) ? "inet" : "inet6", host, PTR);
             }
 
         } else if (family == AF_PACKET && ifa->ifa_data != NULL) {
@@ -111,7 +111,7 @@ DICT *get_interfaces() {
             for (int i = 0; i < 6; i++)
                 len += sprintf(&buf[len], "%02X%s", s->sll_addr[i], i < 5 ? ":" : "");
             buf[len] = 0;
-            dict_put_kvp(interface, "ether", buf, STR);
+            dict_put_kvp(interface, "ether", buf, PTR);
         }
     }
 
@@ -132,13 +132,13 @@ DICT *get_metadata() {
 
     //meta_data = dict_create("Metadata", ALLOCATE_MEMORY_FOR_NEW_TAGS);
     meta = dict_create("meta");
-    dict_put_kvp(meta, "type", "metadata", STR);
-    dict_put_kvp(meta, "fqn", (gethostname(buf, 256) == 0) ? buf : "unknown-hostname", STR);
+    dict_put_kvp(meta, "type", "metadata", PTR);
+    dict_put_kvp(meta, "fqn", (gethostname(buf, 256) == 0) ? buf : "unknown-hostname", PTR);
 
     if (tmpptr = strchr(buf, '.')) {
         tmpptr[0] = 0;
     }
-    dict_put_kvp(meta, "name", (tmpptr) ? tmpptr : buf, STR);
+    dict_put_kvp(meta, "name", (tmpptr) ? tmpptr : buf, PTR);
 
     if ((fp = popen("/usr/bin/lscpu", "r")) != NULL) {
         meta = parse_into_dict(fp, "([^:]*):\\s*(.*)", meta);
@@ -154,7 +154,7 @@ DICT *get_metadata() {
         }
         pclose(fp);
     } else {
-        dict_put_kvp(meta, "Architecture", "noArch-lscpu-failed", STR);
+        dict_put_kvp(meta, "Architecture", "noArch-lscpu-failed", PTR);
     }
 
 
@@ -168,17 +168,17 @@ DICT *get_metadata() {
             //FIXME remove = and replace with space
             fclose(fp);
         }
-        dict_put_kvp(meta, "compatible", get_firstline_from_file("/proc/device-tree/compatible", buf), STR);
-        dict_put_kvp(meta, "model", get_firstline_from_file("/proc/device-tree/model", buf), STR);
-        dict_put_kvp(meta, "part-number", get_firstline_from_file("/proc/device-tree/part-number", buf), STR);
-        dict_put_kvp(meta, "serial-number", get_firstline_from_file("/proc/device-tree/serial-number", buf), STR);
-        dict_put_kvp(meta, "system-id", get_firstline_from_file("/proc/device-tree/system-id", buf), STR);
-        dict_put_kvp(meta, "vendor", get_firstline_from_file("/proc/device-tree/vendor", buf), STR);
+        dict_put_kvp(meta, "compatible", get_firstline_from_file("/proc/device-tree/compatible", buf), PTR);
+        dict_put_kvp(meta, "model", get_firstline_from_file("/proc/device-tree/model", buf), PTR);
+        dict_put_kvp(meta, "part-number", get_firstline_from_file("/proc/device-tree/part-number", buf), PTR);
+        dict_put_kvp(meta, "serial-number", get_firstline_from_file("/proc/device-tree/serial-number", buf), PTR);
+        dict_put_kvp(meta, "system-id", get_firstline_from_file("/proc/device-tree/system-id", buf), PTR);
+        dict_put_kvp(meta, "vendor", get_firstline_from_file("/proc/device-tree/vendor", buf), PTR);
     }
     if (FLAGS & IS_POWER & IS_POWER_VM) {
         if (access("/proc/device-tree", R_OK) == 0) {
-            dict_put_kvp(meta, "model", get_firstline_from_file("/proc/device-tree/model", buf), STR);
-            dict_put_kvp(meta, "system-id", get_firstline_from_file("/proc/device-tree/system-id", buf), STR);
+            dict_put_kvp(meta, "model", get_firstline_from_file("/proc/device-tree/model", buf), PTR);
+            dict_put_kvp(meta, "system-id", get_firstline_from_file("/proc/device-tree/system-id", buf), PTR);
         }
     }
 
@@ -187,9 +187,9 @@ DICT *get_metadata() {
         /* x86_64 and AMD64 and Arm - dmi files requires root user */
         if (access("/sys/devices/virtual/dmi/id/", R_OK) == 0) {
             dict_put_kvp(meta, "serial-number", get_firstline_from_file
-                    ("/sys/devices/virtual/dmi/id/product_serial", buf), STR);
+                    ("/sys/devices/virtual/dmi/id/product_serial", buf), PTR);
             char *sn = get_firstline_from_file("/sys/devices/virtual/dmi/id/product_name", buf);
-            dict_put_kvp(meta, "model", sn == NULL || strlen(sn) == 0 ? "not-root" : sn, STR);
+            dict_put_kvp(meta, "model", sn == NULL || strlen(sn) == 0 ? "not-root" : sn, PTR);
         }
     }
 
@@ -200,7 +200,7 @@ DICT *get_metadata() {
         fclose(fp);
     }
 
-    dict_put_kvp(meta, "uptime", get_uptime(buf), STR);
+    dict_put_kvp(meta, "uptime", get_uptime(buf), PTR);
 
     return meta;
 }
