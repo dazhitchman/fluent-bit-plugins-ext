@@ -29,7 +29,7 @@
 #include "tail.h"
 #include "tail_config.h"
 
-struct flb_tail_file {
+struct flb_tailx_file {
     /* Inotify */
     int watch_fd;
     /* file lookup info */
@@ -92,7 +92,7 @@ struct flb_tail_file {
 
     /* reference */
     int tail_mode;
-    struct flb_tail_config *config;
+    struct flb_tailx_config *config;
     struct mk_list _head;
     struct mk_list _rotate_head;
 };

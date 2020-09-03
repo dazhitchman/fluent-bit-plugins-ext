@@ -27,11 +27,11 @@
 #include "tail_multiline.h"
 
 static int tail_mult_append(struct flb_parser *parser,
-                            struct flb_tail_config *ctx)
+                            struct flb_tailx_config *ctx)
 {
-    struct flb_tail_mult *mp;
+    struct flb_tailx_mult *mp;
 
-    mp = flb_malloc(sizeof(struct flb_tail_mult));
+    mp = flb_malloc(sizeof(struct flb_tailx_mult));
     if (!mp) {
         flb_errno();
         return -1;
@@ -43,7 +43,7 @@ static int tail_mult_append(struct flb_parser *parser,
     return 0;
 }
 
-int flb_tail_mult_create(struct flb_tail_config *ctx,
+int flb_tailx_mult_create(struct flb_tailx_config *ctx,
                          struct flb_input_instance *ins,
                          struct flb_config *config)
 {
@@ -96,18 +96,18 @@ int flb_tail_mult_create(struct flb_tail_config *ctx,
     return 0;
 }
 
-int flb_tail_mult_destroy(struct flb_tail_config *ctx)
+int flb_tailx_mult_destroy(struct flb_tailx_config *ctx)
 {
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tail_mult *mp;
+    struct flb_tailx_mult *mp;
 
     if (ctx->multiline == FLB_FALSE) {
         return 0;
     }
 
     mk_list_foreach_safe(head, tmp, &ctx->mult_parsers) {
-        mp = mk_list_entry(head, struct flb_tail_mult, _head);
+        mp = mk_list_entry(head, struct flb_tailx_mult, _head);
         mk_list_del(&mp->_head);
         flb_free(mp);
     }
@@ -119,8 +119,8 @@ int flb_tail_mult_destroy(struct flb_tail_config *ctx)
  * Pack a line that did not matched a firstline and is not part of a multiline
  * message.
  */
-static int pack_line(char *data, size_t data_size, struct flb_tail_file *file,
-                     struct flb_tail_config *ctx)
+static int pack_line(char *data, size_t data_size, struct flb_tailx_file *file,
+                     struct flb_tailx_config *ctx)
 {
     msgpack_sbuffer mp_sbuf;
     msgpack_packer mp_pck;
@@ -130,7 +130,7 @@ static int pack_line(char *data, size_t data_size, struct flb_tail_file *file,
     msgpack_packer_init(&mp_pck, &mp_sbuf, msgpack_sbuffer_write);
     flb_time_get(&out_time);
 
-    flb_tail_file_pack_line(&mp_sbuf, &mp_pck, &out_time, data, data_size, file);
+    flb_tailx_file_pack_line(&mp_sbuf, &mp_pck, &out_time, data, data_size, file);
     flb_input_chunk_append_raw(ctx->ins,
                                file->tag_buf,
                                file->tag_len,
@@ -142,11 +142,11 @@ static int pack_line(char *data, size_t data_size, struct flb_tail_file *file,
 }
 
 /* Process the result of a firstline match */
-int flb_tail_mult_process_first(time_t now,
+int flb_tailx_mult_process_first(time_t now,
                                 char *buf, size_t size,
                                 struct flb_time *out_time,
-                                struct flb_tail_file *file,
-                                struct flb_tail_config *ctx)
+                                struct flb_tailx_file *file,
+                                struct flb_tailx_config *ctx)
 {
     int ret;
     size_t off;
@@ -160,7 +160,7 @@ int flb_tail_mult_process_first(time_t now,
         msgpack_sbuffer_init(&mp_sbuf);
         msgpack_packer_init(&mp_pck, &mp_sbuf, msgpack_sbuffer_write);
 
-        flb_tail_mult_flush(&mp_sbuf, &mp_pck, file, ctx);
+        flb_tailx_mult_flush(&mp_sbuf, &mp_pck, file, ctx);
         flb_input_chunk_append_raw(ctx->ins,
                                    file->tag_buf,
                                    file->tag_len,
@@ -227,9 +227,9 @@ int flb_tail_mult_process_first(time_t now,
 }
 
 /* Append a raw log entry to the last structured field in the mult buffer */
-static inline void flb_tail_mult_append_raw(char *buf, int size,
-                                            struct flb_tail_file *file,
-                                            struct flb_tail_config *config)
+static inline void flb_tailx_mult_append_raw(char *buf, int size,
+                                            struct flb_tailx_file *file,
+                                            struct flb_tailx_config *config)
 {
     /* Append the raw string */
     msgpack_pack_str(&file->mult_pck, size);
@@ -272,17 +272,17 @@ static inline int is_last_key_val_string(char *buf, size_t size)
     return ret;
 }
 
-int flb_tail_mult_process_content(time_t now,
+int flb_tailx_mult_process_content(time_t now,
                                   char *buf, int len,
-                                  struct flb_tail_file *file,
-                                  struct flb_tail_config *ctx)
+                                  struct flb_tailx_file *file,
+                                  struct flb_tailx_config *ctx)
 {
     int ret;
     size_t off;
     void *out_buf;
     size_t out_size = 0;
     struct mk_list *head;
-    struct flb_tail_mult *mult_parser = NULL;
+    struct flb_tailx_mult *mult_parser = NULL;
     struct flb_time out_time = {0};
     msgpack_object map;
     msgpack_unpacked result;
@@ -304,7 +304,7 @@ int flb_tail_mult_process_content(time_t now,
         else
             file->mult_firstline_append = FLB_FALSE;
 
-        flb_tail_mult_process_first(now, out_buf, out_size, &out_time,
+        flb_tailx_mult_process_first(now, out_buf, out_size, &out_time,
                                     file, ctx);
         return FLB_TAIL_MULT_MORE;
     }
@@ -319,7 +319,7 @@ int flb_tail_mult_process_content(time_t now,
      */
     out_buf = NULL;
     mk_list_foreach(head, &ctx->mult_parsers) {
-        mult_parser = mk_list_entry(head, struct flb_tail_mult, _head);
+        mult_parser = mk_list_entry(head, struct flb_tailx_mult, _head);
 
         /* Process line text with current parser */
         out_buf = NULL;
@@ -342,7 +342,7 @@ int flb_tail_mult_process_content(time_t now,
          * to the last structured field.
          */
         if (file->mult_firstline == FLB_TRUE && file->mult_firstline_append == FLB_TRUE) {
-            flb_tail_mult_append_raw(buf, len, file, ctx);
+            flb_tailx_mult_append_raw(buf, len, file, ctx);
         }
         else {
             pack_line(buf, len, file, ctx);
@@ -365,8 +365,8 @@ int flb_tail_mult_process_content(time_t now,
 }
 
 /* Flush any multiline context data into outgoing buffers */
-int flb_tail_mult_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
-                        struct flb_tail_file *file, struct flb_tail_config *ctx)
+int flb_tailx_mult_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
+                        struct flb_tailx_file *file, struct flb_tailx_config *ctx)
 {
     int i;
     int map_size;
@@ -491,21 +491,21 @@ int flb_tail_mult_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
     return 0;
 }
 
-int flb_tail_mult_pending_flush(struct flb_input_instance *ins,
+int flb_tailx_mult_pending_flush(struct flb_input_instance *ins,
                                 struct flb_config *config, void *context)
 {
     time_t now;
     msgpack_sbuffer mp_sbuf;
     msgpack_packer mp_pck;
     struct mk_list *head;
-    struct flb_tail_file *file;
-    struct flb_tail_config *ctx = context;
+    struct flb_tailx_file *file;
+    struct flb_tailx_config *ctx = context;
 
     now = time(NULL);
 
     /* Iterate promoted event files with pending bytes */
     mk_list_foreach(head, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
 
         if (file->mult_flush_timeout > now) {
             continue;
@@ -520,7 +520,7 @@ int flb_tail_mult_pending_flush(struct flb_input_instance *ins,
         msgpack_sbuffer_init(&mp_sbuf);
         msgpack_packer_init(&mp_pck, &mp_sbuf, msgpack_sbuffer_write);
 
-        flb_tail_mult_flush(&mp_sbuf, &mp_pck, file, ctx);
+        flb_tailx_mult_flush(&mp_sbuf, &mp_pck, file, ctx);
 
         flb_input_chunk_append_raw(ins,
                                    file->tag_buf,

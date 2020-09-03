@@ -26,10 +26,10 @@
  * if the table belong to an input/output plugin, use plugin name
  * plus to what it's about, e.g:
  *
- * in_tail plugin table to track files: in_tail_files
+ * in_tail plugin table to track files: in_tailx_files
  */
 #define SQL_CREATE_FILES                                                \
-    "CREATE TABLE IF NOT EXISTS in_tail_files ("                        \
+    "CREATE TABLE IF NOT EXISTS in_tailx_files ("                        \
     "  id      INTEGER PRIMARY KEY,"                                    \
     "  name    TEXT NOT NULL,"                                          \
     "  offset  INTEGER,"                                                \
@@ -38,20 +38,20 @@
     "  rotated INTEGER DEFAULT 0"                                       \
     ");"
 
-#define SQL_GET_FILE "SELECT * from in_tail_files WHERE inode=%"PRIu64";"
+#define SQL_GET_FILE "SELECT * from in_tailx_files WHERE inode=%"PRIu64";"
 
 #define SQL_INSERT_FILE                                             \
-    "INSERT INTO in_tail_files (name, offset, inode, created)"      \
+    "INSERT INTO in_tailx_files (name, offset, inode, created)"      \
     "  VALUES ('%s', %"PRIu64", %"PRIu64", %"PRIu64");"
 
 #define SQL_UPDATE_OFFSET                                   \
-    "UPDATE in_tail_files set offset=@offset WHERE id=@id;"
+    "UPDATE in_tailx_files set offset=@offset WHERE id=@id;"
 
 #define SQL_ROTATE_FILE                                                 \
-    "UPDATE in_tail_files set name='%s',rotated=1 WHERE id=%"PRId64";"
+    "UPDATE in_tailx_files set name='%s',rotated=1 WHERE id=%"PRId64";"
 
 #define SQL_DELETE_FILE                                                 \
-    "DELETE FROM in_tail_files WHERE id=%"PRId64";"
+    "DELETE FROM in_tailx_files WHERE id=%"PRId64";"
 
 #define SQL_PRAGMA_SYNC                         \
     "PRAGMA synchronous=%i;"

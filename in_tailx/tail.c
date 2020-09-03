@@ -59,26 +59,26 @@ static inline int consume_byte(int fd)
 }
 
 /* cb_collect callback */
-static int in_tail_collect_pending(struct flb_input_instance *ins,
+static int in_tailx_collect_pending(struct flb_input_instance *ins,
                                    struct flb_config *config, void *in_context)
 {
     int ret;
     int active = 0;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tail_config *ctx = in_context;
-    struct flb_tail_file *file;
+    struct flb_tailx_config *ctx = in_context;
+    struct flb_tailx_file *file;
     struct stat st;
 
     /* Iterate promoted event files with pending bytes */
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
 
         /* Gather current file size */
         ret = fstat(file->fd, &st);
         if (ret == -1) {
             flb_errno();
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             continue;
         }
         file->size = st.st_size;
@@ -88,11 +88,11 @@ static int in_tail_collect_pending(struct flb_input_instance *ins,
             continue;
         }
 
-        ret = flb_tail_file_chunk(file);
+        ret = flb_tailx_file_chunk(file);
         switch (ret) {
         case FLB_TAIL_ERROR:
             /* Could not longer read the file */
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             break;
         case FLB_TAIL_OK:
         case FLB_TAIL_BUSY:
@@ -120,7 +120,7 @@ static int in_tail_collect_pending(struct flb_input_instance *ins,
 }
 
 /* cb_collect callback */
-static int in_tail_collect_static(struct flb_input_instance *ins,
+static int in_tailx_collect_static(struct flb_input_instance *ins,
                                   struct flb_config *config, void *in_context)
 {
     int ret;
@@ -130,20 +130,20 @@ static int in_tail_collect_static(struct flb_input_instance *ins,
     int alter_size = 0;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tail_config *ctx = in_context;
-    struct flb_tail_file *file;
+    struct flb_tailx_config *ctx = in_context;
+    struct flb_tailx_file *file;
 
     /* Do a data chunk collection for each file */
     mk_list_foreach_safe(head, tmp, &ctx->files_static) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
 
-        ret = flb_tail_file_chunk(file);
+        ret = flb_tailx_file_chunk(file);
         switch (ret) {
         case FLB_TAIL_ERROR:
             /* Could not longer read the file */
             flb_plg_debug(ctx->ins, "inode=%"PRIu64" collect static ERROR",
                           file->inode);
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             break;
         case FLB_TAIL_OK:
         case FLB_TAIL_BUSY:
@@ -192,11 +192,11 @@ static int in_tail_collect_static(struct flb_input_instance *ins,
             if (alter_size == 0) {
                 pre_size = mk_list_size(&ctx->files_static);
             }
-            ret = flb_tail_file_to_event(file);
+            ret = flb_tailx_file_to_event(file);
             if (ret == -1) {
                 flb_plg_debug(ctx->ins, "file=%s cannot promote, unregistering",
                               file->name);
-                flb_tail_file_remove(file);
+                flb_tailx_file_remove(file);
             }
 
             if (alter_size == 0) {
@@ -221,27 +221,27 @@ static int in_tail_collect_static(struct flb_input_instance *ins,
     return 0;
 }
 
-static int in_tail_watcher_callback(struct flb_input_instance *ins,
+static int in_tailx_watcher_callback(struct flb_input_instance *ins,
                                     struct flb_config *config, void *context)
 {
     int ret = 0;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tail_config *ctx = context;
-    struct flb_tail_file *file;
+    struct flb_tailx_config *ctx = context;
+    struct flb_tailx_file *file;
     (void) config;
 
 #ifndef _MSC_VER
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         if (file->is_link == FLB_TRUE) {
-            ret = flb_tail_file_is_rotated(ctx, file);
+            ret = flb_tailx_file_is_rotated(ctx, file);
             if (ret == FLB_FALSE) {
                 continue;
             }
 
             /* The symbolic link name has been rotated */
-            flb_tail_file_rotated(file);
+            flb_tailx_file_rotated(file);
         }
     }
 
@@ -249,23 +249,23 @@ static int in_tail_watcher_callback(struct flb_input_instance *ins,
     return ret;
 }
 
-int in_tail_collect_event(void *file, struct flb_config *config)
+int in_tailx_collect_event(void *file, struct flb_config *config)
 {
     int ret;
     struct stat st;
-    struct flb_tail_file *f = file;
+    struct flb_tailx_file *f = file;
 
     ret = fstat(f->fd, &st);
     if (ret == -1) {
-        flb_tail_file_remove(f);
+        flb_tailx_file_remove(f);
         return 0;
     }
 
-    ret = flb_tail_file_chunk(f);
+    ret = flb_tailx_file_chunk(f);
     switch (ret) {
     case FLB_TAIL_ERROR:
         /* Could not longer read the file */
-        flb_tail_file_remove(f);
+        flb_tailx_file_remove(f);
         break;
     case FLB_TAIL_OK:
     case FLB_TAIL_WAIT:
@@ -276,77 +276,77 @@ int in_tail_collect_event(void *file, struct flb_config *config)
 }
 
 /* Initialize plugin */
-static int in_tail_init(struct flb_input_instance *in,
+static int in_tailx_init(struct flb_input_instance *in,
                         struct flb_config *config, void *data)
 {
     int ret = -1;
-    struct flb_tail_config *ctx = NULL;
+    struct flb_tailx_config *ctx = NULL;
 
     /* Allocate space for the configuration */
-    ctx = flb_tail_config_create(in, config);
+    ctx = flb_tailx_config_create(in, config);
     if (!ctx) {
         return -1;
     }
     ctx->ins = in;
 
     /* Initialize file-system watcher */
-    ret = flb_tail_fs_init(in, ctx, config);
+    ret = flb_tailx_fs_init(in, ctx, config);
     if (ret == -1) {
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return -1;
     }
 
     /* Scan path */
-    flb_tail_scan(ctx->path_list, ctx);
+    flb_tailx_scan(ctx->path_list, ctx);
 
     /* Set plugin context */
     flb_input_set_context(in, ctx);
 
     /* Register an event collector */
-    ret = flb_input_set_collector_event(in, in_tail_collect_static,
+    ret = flb_input_set_collector_event(in, in_tailx_collect_static,
                                         ctx->ch_manager[0], config);
     if (ret == -1) {
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return -1;
     }
     ctx->coll_fd_static = ret;
 
     /* Register re-scan: time managed by 'refresh_interval' property */
-    ret = flb_input_set_collector_time(in, flb_tail_scan_callback,
+    ret = flb_input_set_collector_time(in, flb_tailx_scan_callback,
                                        ctx->refresh_interval_sec,
                                        ctx->refresh_interval_nsec,
                                        config);
     if (ret == -1) {
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return -1;
     }
     ctx->coll_fd_scan = ret;
 
     /* Register watcher, interval managed by 'watcher_interval' property */
-    ret = flb_input_set_collector_time(in, in_tail_watcher_callback,
+    ret = flb_input_set_collector_time(in, in_tailx_watcher_callback,
                                        ctx->watcher_interval, 0,
                                        config);
     if (ret == -1) {
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return -1;
     }
     ctx->coll_fd_watcher = ret;
 
     /* Register callback to purge rotated files */
-    ret = flb_input_set_collector_time(in, flb_tail_file_purge,
+    ret = flb_input_set_collector_time(in, flb_tailx_file_purge,
                                        ctx->rotate_wait, 0,
                                        config);
     if (ret == -1) {
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return -1;
     }
     ctx->coll_fd_rotated = ret;
 
     /* Register callback to process pending bytes in promoted files */
-    ret = flb_input_set_collector_event(in, in_tail_collect_pending,
+    ret = flb_input_set_collector_event(in, in_tailx_collect_pending,
                                         ctx->ch_pending[0], config);//1, 0, config);
     if (ret == -1) {
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return -1;
     }
     ctx->coll_fd_pending = ret;
@@ -360,12 +360,12 @@ static int in_tail_init(struct flb_input_instance *in,
 
     /* Register callback to process docker mode queued buffer */
     if (ctx->docker_mode == FLB_TRUE) {
-        ret = flb_input_set_collector_time(in, flb_tail_dmode_pending_flush,
+        ret = flb_input_set_collector_time(in, flb_tailx_dmode_pending_flush,
                                            ctx->docker_mode_flush, 0,
                                            config);
         if (ret == -1) {
             ctx->docker_mode = FLB_FALSE;
-            flb_tail_config_destroy(ctx);
+            flb_tailx_config_destroy(ctx);
             return -1;
         }
         ctx->coll_fd_dmode_flush = ret;
@@ -374,12 +374,12 @@ static int in_tail_init(struct flb_input_instance *in,
 #ifdef FLB_HAVE_PARSER
     /* Register callback to process multiline queued buffer */
     if (ctx->multiline == FLB_TRUE) {
-        ret = flb_input_set_collector_time(in, flb_tail_mult_pending_flush,
+        ret = flb_input_set_collector_time(in, flb_tailx_mult_pending_flush,
                                            ctx->multiline_flush, 0,
                                            config);
         if (ret == -1) {
             ctx->multiline = FLB_FALSE;
-            flb_tail_config_destroy(ctx);
+            flb_tailx_config_destroy(ctx);
             return -1;
         }
         ctx->coll_fd_mult_flush = ret;
@@ -390,29 +390,29 @@ static int in_tail_init(struct flb_input_instance *in,
 }
 
 /* Pre-run callback / before the event loop */
-static int in_tail_pre_run(struct flb_input_instance *ins,
+static int in_tailx_pre_run(struct flb_input_instance *ins,
                            struct flb_config *config, void *in_context)
 {
-    struct flb_tail_config *ctx = in_context;
+    struct flb_tailx_config *ctx = in_context;
     (void) ins;
 
     return tail_signal_manager(ctx);
 }
 
-static int in_tail_exit(void *data, struct flb_config *config)
+static int in_tailx_exit(void *data, struct flb_config *config)
 {
     (void) *config;
-    struct flb_tail_config *ctx = data;
+    struct flb_tailx_config *ctx = data;
 
-    flb_tail_file_remove_all(ctx);
-    flb_tail_config_destroy(ctx);
+    flb_tailx_file_remove_all(ctx);
+    flb_tailx_config_destroy(ctx);
 
     return 0;
 }
 
-static void in_tail_pause(void *data, struct flb_config *config)
+static void in_tailx_pause(void *data, struct flb_config *config)
 {
-    struct flb_tail_config *ctx = data;
+    struct flb_tailx_config *ctx = data;
 
     /*
      * Pause general collectors:
@@ -431,12 +431,12 @@ static void in_tail_pause(void *data, struct flb_config *config)
     }
 
     /* Pause file system backend handlers */
-    flb_tail_fs_pause(ctx);
+    flb_tailx_fs_pause(ctx);
 }
 
-static void in_tail_resume(void *data, struct flb_config *config)
+static void in_tailx_resume(void *data, struct flb_config *config)
 {
-    struct flb_tail_config *ctx = data;
+    struct flb_tailx_config *ctx = data;
 
     flb_input_collector_resume(ctx->coll_fd_static, ctx->ins);
     flb_input_collector_resume(ctx->coll_fd_pending, ctx->ins);
@@ -450,26 +450,26 @@ static void in_tail_resume(void *data, struct flb_config *config)
     }
 
     /* Pause file system backend handlers */
-    flb_tail_fs_resume(ctx);
+    flb_tailx_fs_resume(ctx);
 }
 
 /* Configuration properties map */
 static struct flb_config_map config_map[] = {
     {
      FLB_CONFIG_MAP_CLIST, "path", NULL,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, path_list),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, path_list),
      "pattern specifying log files or multiple ones through "
      "the use of common wildcards."
     },
     {
      FLB_CONFIG_MAP_CLIST, "exclude_path", NULL,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, exclude_list),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, exclude_list),
      "Set one or multiple shell patterns separated by commas to exclude "
      "files matching a certain criteria, e.g: 'exclude_path *.gz,*.zip'"
     },
     {
      FLB_CONFIG_MAP_STR, "key", "log",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, key),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, key),
      "when a message is unstructured (no parser applied), it's appended "
      "as a string under the key name log. This option allows to define an "
      "alternative name for that key."
@@ -481,24 +481,24 @@ static struct flb_config_map config_map[] = {
     },
     {
      FLB_CONFIG_MAP_TIME, "watcher_interval", "2s",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, watcher_interval),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, watcher_interval),
     },
     {
      FLB_CONFIG_MAP_INT, "rotate_wait", FLB_TAIL_ROTATE_WAIT,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, rotate_wait),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, rotate_wait),
      "specify the number of extra time in seconds to monitor a file once is "
      "rotated in case some pending data is flushed."
     },
     {
      FLB_CONFIG_MAP_BOOL, "docker_mode", "false",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, docker_mode),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, docker_mode),
      "If enabled, the plugin will recombine split Docker log lines before "
      "passing them to any parser as configured above. This mode cannot be "
      "used at the same time as Multiline."
     },
     {
      FLB_CONFIG_MAP_INT, "docker_mode_flush", "4",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, docker_mode_flush),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, docker_mode_flush),
      "wait period time in seconds to flush queued unfinished split lines."
 
     },
@@ -511,12 +511,12 @@ static struct flb_config_map config_map[] = {
 #endif
     {
      FLB_CONFIG_MAP_STR, "path_key", NULL,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, path_key),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, path_key),
      "set the 'key' name where the name of monitored file will be appended."
     },
     {
      FLB_CONFIG_MAP_TIME, "ignore_older", "0",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, ignore_older),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, ignore_older),
      "ignore records older than 'ignore_older'. Supports m,h,d (minutes, "
      "hours, days) syntax. Default behavior is to read all records. Option "
      "only available when a Parser is specified and it can parse the time "
@@ -524,13 +524,13 @@ static struct flb_config_map config_map[] = {
     },
     {
      FLB_CONFIG_MAP_SIZE, "buffer_chunk_size", FLB_TAIL_CHUNK,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, buf_chunk_size),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, buf_chunk_size),
      "set the initial buffer size to read data from files. This value is "
      "used too to increase buffer size."
     },
     {
      FLB_CONFIG_MAP_SIZE, "buffer_max_size", FLB_TAIL_CHUNK,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, buf_max_size),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, buf_max_size),
      "set the limit of the buffer size per monitored file. When a buffer "
      "needs to be increased (e.g: very long lines), this value is used to "
      "restrict how much the memory buffer can grow. If reading a file exceed "
@@ -538,22 +538,22 @@ static struct flb_config_map config_map[] = {
     },
     {
      FLB_CONFIG_MAP_BOOL, "skip_long_lines", "false",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, skip_long_lines),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, skip_long_lines),
      "if a monitored file reach it buffer capacity due to a very long line "
      "(buffer_max_size), the default behavior is to stop monitoring that "
      "file. This option alter that behavior and instruct Fluent Bit to skip "
      "long lines and continue processing other lines that fits into the buffer."
     },
     {
-            FLB_CONFIG_MAP_BOOL, "ignore_glob_errors", "false",
-            0, FLB_TRUE, offsetof(struct flb_tail_config, ignore_glob_errors),
-            "if a glob path returns an error, contine anyway "
-            ", the default behavior is to stop ."
+     FLB_CONFIG_MAP_BOOL, "exit_on_eof", "false",
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, exit_on_eof),
+     "exit Fluent Bit when reaching EOF on a monitored file."
     },
     {
-     FLB_CONFIG_MAP_BOOL, "exit_on_eof", "false",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, exit_on_eof),
-     "exit Fluent Bit when reaching EOF on a monitored file."
+            FLB_CONFIG_MAP_BOOL, "ignore_glob_read_errors", "false",
+            0, FLB_TRUE, offsetof(struct flb_tailx_config, ignore_glob_read_errors),
+            "if a glob path returns an error, contine anyway "
+            ", the default behavior is to stop ."
     },
 #ifdef FLB_HAVE_REGEX
     {
@@ -586,14 +586,14 @@ static struct flb_config_map config_map[] = {
 #ifdef FLB_HAVE_PARSER
     {
      FLB_CONFIG_MAP_BOOL, "multiline", "false",
-     0, FLB_TRUE, offsetof(struct flb_tail_config, multiline),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, multiline),
      "if enabled, the plugin will try to discover multiline messages and use "
      "the proper parsers to compose the outgoing messages. Note that when this "
      "option is enabled the Parser option is not used."
     },
     {
      FLB_CONFIG_MAP_TIME, "multiline_flush", FLB_TAIL_MULT_FLUSH,
-     0, FLB_TRUE, offsetof(struct flb_tail_config, multiline_flush),
+     0, FLB_TRUE, offsetof(struct flb_tailx_config, multiline_flush),
      "wait period time in seconds to process queued multiline messages."
     },
     {
@@ -620,13 +620,13 @@ static struct flb_config_map config_map[] = {
 struct flb_input_plugin in_tailx_plugin = {
     .name         = "tailx",
     .description  = "Tail files",
-    .cb_init      = in_tail_init,
-    .cb_pre_run   = in_tail_pre_run,
+    .cb_init      = in_tailx_init,
+    .cb_pre_run   = in_tailx_pre_run,
     .cb_collect   = NULL,
     .cb_flush_buf = NULL,
-    .cb_pause     = in_tail_pause,
-    .cb_resume    = in_tail_resume,
-    .cb_exit      = in_tail_exit,
+    .cb_pause     = in_tailx_pause,
+    .cb_resume    = in_tailx_resume,
+    .cb_exit      = in_tailx_exit,
     .config_map   = config_map,
     .flags        = 0
 };

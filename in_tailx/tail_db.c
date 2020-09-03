@@ -33,9 +33,9 @@ struct query_status {
 };
 
 /* Open or create database required by tail plugin */
-struct flb_sqldb *flb_tail_db_open(const char *path,
+struct flb_sqldb *flb_tailx_db_open(const char *path,
                                    struct flb_input_instance *in,
-                                   struct flb_tail_config *ctx,
+                                   struct flb_tailx_config *ctx,
                                    struct flb_config *config)
 {
     int ret;
@@ -51,7 +51,7 @@ struct flb_sqldb *flb_tail_db_open(const char *path,
     /* Create table schema if it don't exists */
     ret = flb_sqldb_query(db, SQL_CREATE_FILES, NULL, NULL);
     if (ret != FLB_OK) {
-        flb_plg_error(ctx->ins, "db: could not create 'in_tail_files' table");
+        flb_plg_error(ctx->ins, "db: could not create 'in_tailx_files' table");
         flb_sqldb_close(db);
         return NULL;
     }
@@ -78,7 +78,7 @@ struct flb_sqldb *flb_tail_db_open(const char *path,
     return db;
 }
 
-int flb_tail_db_close(struct flb_sqldb *db)
+int flb_tailx_db_close(struct flb_sqldb *db)
 {
     flb_sqldb_close(db);
     return 0;
@@ -96,8 +96,8 @@ static int cb_file_check(void *data, int argc, char **argv, char **cols)
     return 0;
 }
 
-int flb_tail_db_file_set(struct flb_tail_file *file,
-                         struct flb_tail_config *ctx)
+int flb_tailx_db_file_set(struct flb_tailx_file *file,
+                         struct flb_tailx_config *ctx)
 {
     int ret;
     char query[PATH_MAX];
@@ -137,8 +137,8 @@ int flb_tail_db_file_set(struct flb_tail_file *file,
 }
 
 /* Update Offset v2 */
-int flb_tail_db_file_offset(struct flb_tail_file *file,
-                            struct flb_tail_config *ctx)
+int flb_tailx_db_file_offset(struct flb_tailx_file *file,
+                            struct flb_tailx_config *ctx)
 {
     int ret;
 
@@ -159,9 +159,9 @@ int flb_tail_db_file_offset(struct flb_tail_file *file,
 }
 
 /* Mark a file as rotated */
-int flb_tail_db_file_rotate(const char *new_name,
-                            struct flb_tail_file *file,
-                            struct flb_tail_config *ctx)
+int flb_tailx_db_file_rotate(const char *new_name,
+                            struct flb_tailx_file *file,
+                            struct flb_tailx_config *ctx)
 {
     int ret;
     char query[PATH_MAX];
@@ -181,8 +181,8 @@ int flb_tail_db_file_rotate(const char *new_name,
 }
 
 /* Delete file entry from the database */
-int flb_tail_db_file_delete(struct flb_tail_file *file,
-                            struct flb_tail_config *ctx)
+int flb_tailx_db_file_delete(struct flb_tailx_file *file,
+                            struct flb_tailx_config *ctx)
 {
     int ret;
     char query[PATH_MAX];

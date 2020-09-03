@@ -37,7 +37,7 @@
 
 #include "win32.h"
 
-static int tail_is_excluded(char *path, struct flb_tail_config *ctx)
+static int tail_is_excluded(char *path, struct flb_tailx_config *ctx)
 {
     struct mk_list *head;
     struct flb_slist_entry *pattern;
@@ -57,10 +57,10 @@ static int tail_is_excluded(char *path, struct flb_tail_config *ctx)
 }
 
 /*
- * This function is a thin wrapper over flb_tail_file_append(),
+ * This function is a thin wrapper over flb_tailx_file_append(),
  * adding normalization and sanity checks on top of it.
  */
-static int tail_register_file(const char *target, struct flb_tail_config *ctx)
+static int tail_register_file(const char *target, struct flb_tailx_config *ctx)
 {
     struct stat st;
     char path[MAX_PATH];
@@ -79,7 +79,7 @@ static int tail_register_file(const char *target, struct flb_tail_config *ctx)
         return -1;
     }
 
-    return flb_tail_file_append(path, &st, FLB_TAIL_STATIC, ctx);
+    return flb_tailx_file_append(path, &st, FLB_TAIL_STATIC, ctx);
 }
 
 /*
@@ -91,7 +91,7 @@ static int tail_register_file(const char *target, struct flb_tail_config *ctx)
  * On success, the number of files found is returned (zero indicates
  * "no file found"). On error, -1 is returned.
  */
-static int tail_scan_pattern(const char *path, struct flb_tail_config *ctx)
+static int tail_scan_pattern(const char *path, struct flb_tailx_config *ctx)
 {
     char *star, *p0, *p1;
     char pattern[MAX_PATH];
@@ -209,7 +209,7 @@ static int tail_filepath(char *buf, int len, const char *basedir, const char *fi
     return 0;
 }
 
-static int tail_scan_path(const char *path, struct flb_tail_config *ctx)
+static int tail_scan_path(const char *path, struct flb_tailx_config *ctx)
 {
     int ret;
     int n_added = 0;

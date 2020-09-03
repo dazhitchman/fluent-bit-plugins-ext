@@ -49,8 +49,8 @@ static int tail_fs_event(struct flb_input_instance *ins,
     int ret;
     struct mk_list *head;
     struct mk_list *tmp;
-    struct flb_tail_config *ctx = in_context;
-    struct flb_tail_file *file = NULL;
+    struct flb_tailx_config *ctx = in_context;
+    struct flb_tailx_file *file = NULL;
     struct fs_stat *fst;
     struct stat st;
     time_t t;
@@ -59,7 +59,7 @@ static int tail_fs_event(struct flb_input_instance *ins,
 
     /* Lookup watched file */
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         fst = file->fs_backend;
 
         /* Check current status of the file */
@@ -75,7 +75,7 @@ static int tail_fs_event(struct flb_input_instance *ins,
             /* Update stat info and trigger the notification */
             memcpy(&fst->st, &st, sizeof(struct stat));
             fst->checked = t;
-            in_tail_collect_event(file, config);
+            in_tailx_collect_event(file, config);
         }
     }
 
@@ -90,20 +90,20 @@ static int tail_fs_check(struct flb_input_instance *ins,
     char *name;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tail_config *ctx = in_context;
-    struct flb_tail_file *file = NULL;
+    struct flb_tailx_config *ctx = in_context;
+    struct flb_tailx_file *file = NULL;
     struct fs_stat *fst;
     struct stat st;
 
     /* Lookup watched file */
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         fst = file->fs_backend;
 
         ret = fstat(file->fd, &st);
         if (ret == -1) {
             flb_plg_debug(ctx->ins, "error stat(2) %s, removing", file->name);
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             continue;
         }
 
@@ -113,10 +113,10 @@ static int tail_fs_check(struct flb_input_instance *ins,
 #ifdef FLB_HAVE_SQLDB
             if (ctx->db) {
                 /* Remove file entry from the database */
-                flb_tail_db_file_delete(file, ctx);
+                flb_tailx_db_file_delete(file, ctx);
             }
 #endif
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             continue;
         }
 
@@ -136,7 +136,7 @@ static int tail_fs_check(struct flb_input_instance *ins,
 #ifdef FLB_HAVE_SQLDB
             /* Update offset in database file */
             if (ctx->db) {
-                flb_tail_db_file_offset(file, ctx);
+                flb_tailx_db_file_offset(file, ctx);
             }
 #endif
         }
@@ -151,10 +151,10 @@ static int tail_fs_check(struct flb_input_instance *ins,
 
 
         /* Discover the current file name for the open file descriptor */
-        name = flb_tail_file_name(file);
+        name = flb_tailx_file_name(file);
         if (!name) {
             flb_plg_debug(ctx->ins, "could not resolve %s, removing", file->name);
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             continue;
         }
 
@@ -163,12 +163,12 @@ static int tail_fs_check(struct flb_input_instance *ins,
          * user is using an absolute path, otherwise we will be rotating the
          * wrong file.
          *
-         * flb_tail_target_file_name_cmp is a deeper compare than
-         * flb_tail_file_name_cmp. If applicable, it compares to the underlying
+         * flb_tailx_target_file_name_cmp is a deeper compare than
+         * flb_tailx_file_name_cmp. If applicable, it compares to the underlying
          * real_name of the file.
          */
-        if (flb_tail_file_is_rotated(ctx, file) == FLB_TRUE) {
-            flb_tail_file_rotated(file);
+        if (flb_tailx_file_is_rotated(ctx, file) == FLB_TRUE) {
+            flb_tailx_file_rotated(file);
         }
         flb_free(name);
 
@@ -178,8 +178,8 @@ static int tail_fs_check(struct flb_input_instance *ins,
 }
 
 /* File System events based on stat(2) */
-int flb_tail_fs_init(struct flb_input_instance *in,
-                     struct flb_tail_config *ctx, struct flb_config *config)
+int flb_tailx_fs_init(struct flb_input_instance *in,
+                     struct flb_tailx_config *ctx, struct flb_config *config)
 {
     int ret;
 
@@ -202,19 +202,19 @@ int flb_tail_fs_init(struct flb_input_instance *in,
     return 0;
 }
 
-void flb_tail_fs_pause(struct flb_tail_config *ctx)
+void flb_tailx_fs_pause(struct flb_tailx_config *ctx)
 {
     flb_input_collector_pause(ctx->coll_fd_fs1, ctx->ins);
     flb_input_collector_pause(ctx->coll_fd_fs2, ctx->ins);
 }
 
-void flb_tail_fs_resume(struct flb_tail_config *ctx)
+void flb_tailx_fs_resume(struct flb_tailx_config *ctx)
 {
     flb_input_collector_resume(ctx->coll_fd_fs1, ctx->ins);
     flb_input_collector_resume(ctx->coll_fd_fs2, ctx->ins);
 }
 
-int flb_tail_fs_add(struct flb_tail_file *file)
+int flb_tailx_fs_add(struct flb_tailx_file *file)
 {
     int ret;
     struct fs_stat *fst;
@@ -237,7 +237,7 @@ int flb_tail_fs_add(struct flb_tail_file *file)
     return 0;
 }
 
-int flb_tail_fs_remove(struct flb_tail_file *file)
+int flb_tailx_fs_remove(struct flb_tailx_file *file)
 {
     if (file->tail_mode == FLB_TAIL_EVENT) {
         flb_free(file->fs_backend);
@@ -245,7 +245,7 @@ int flb_tail_fs_remove(struct flb_tail_file *file)
     return 0;
 }
 
-int flb_tail_fs_exit(struct flb_tail_config *ctx)
+int flb_tailx_fs_exit(struct flb_tailx_config *ctx)
 {
     (void) ctx;
     return 0;

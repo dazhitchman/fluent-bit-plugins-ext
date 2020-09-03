@@ -39,6 +39,6 @@
 #define FLB_TAIL_REFRESH      60         /* refresh every 60 seconds       */
 #define FLB_TAIL_ROTATE_WAIT  "5"        /* time to monitor after rotation */
 
-int in_tail_collect_event(void *file, struct flb_config *config);
+int in_tailx_collect_event(void *file, struct flb_config *config);
 
 #endif

@@ -37,7 +37,7 @@
 #define FLB_TAIL_METRIC_F_ROTATED 102  /* number of rotated files */
 #endif
 
-struct flb_tail_config {
+struct flb_tailx_config {
     int fd_notify;             /* inotify fd               */
 #ifdef _WIN32
     intptr_t ch_manager[2];    /* pipe: channel manager    */
@@ -82,7 +82,7 @@ struct flb_tail_config {
     flb_sds_t key;             /* key for unstructured record  */
     int   skip_long_lines;     /* skip long lines              */
     int   exit_on_eof;         /* exit fluent-bit on EOF, test */
-    int   ignore_glob_errors;
+    int   ignore_glob_read_errors;
 
     /* Database */
 #ifdef FLB_HAVE_SQLDB
@@ -119,8 +119,8 @@ struct flb_tail_config {
     struct flb_input_instance *ins;
 };
 
-struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
-                                               struct flb_config *config);
-int flb_tail_config_destroy(struct flb_tail_config *config);
+struct flb_tailx_config *flb_tailx_config_create(struct flb_input_instance *ins,
+                                                struct flb_config *config);
+int flb_tailx_config_destroy(struct flb_tailx_config *config);
 
 #endif

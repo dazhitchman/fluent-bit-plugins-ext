@@ -35,24 +35,24 @@
 #include "tail_multiline.h"
 #endif
 
-struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
-                                               struct flb_config *config)
+struct flb_tailx_config *flb_tailx_config_create(struct flb_input_instance *ins,
+                                                struct flb_config *config)
 {
     int ret;
     int sec;
     int i;
     long nsec;
     const char *tmp;
-    struct flb_tail_config *ctx;
+    struct flb_tailx_config *ctx;
 
-    ctx = flb_calloc(1, sizeof(struct flb_tail_config));
+    ctx = flb_calloc(1, sizeof(struct flb_tailx_config));
     if (!ctx) {
         flb_errno();
         return NULL;
     }
     ctx->ins = ins;
     ctx->ignore_older = 0;
-    ctx->ignore_glob_errors= FLB_FALSE;
+    ctx->ignore_glob_read_errors= FLB_FALSE;
     ctx->skip_long_lines = FLB_FALSE;
 #ifdef FLB_HAVE_SQLDB
     ctx->db_sync = -1;
@@ -80,7 +80,7 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
     ret = flb_pipe_create(ctx->ch_pending);
     if (ret == -1) {
         flb_errno();
-        flb_tail_config_destroy(ctx);
+        flb_tailx_config_destroy(ctx);
         return NULL;
     }
     /* Make pending channel non-blocking */
@@ -88,7 +88,7 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
         ret = flb_pipe_set_nonblocking(ctx->ch_pending[i]);
         if (ret == -1) {
             flb_errno();
-            flb_tail_config_destroy(ctx);
+            flb_tailx_config_destroy(ctx);
             return NULL;
         }
     }
@@ -98,11 +98,6 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
         flb_plg_error(ctx->ins, "no input 'path' was given");
         flb_free(ctx);
         return NULL;
-    }
-
-    tmp = flb_input_get_property("ignore_glob_errors", ins);
-    if (tmp){
-        ctx->ignore_glob_errors= ( strcmp(tmp,"1") || strcmp(tmp,"true") || strcmp(tmp,"on"));
     }
 
     /* Config: seconds interval before to re-scan the path */
@@ -149,9 +144,9 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
 #ifdef FLB_HAVE_PARSER
     /* Config: multi-line support */
     if (ctx->multiline == FLB_TRUE) {
-        ret = flb_tail_mult_create(ctx, ins, config);
+        ret = flb_tailx_mult_create(ctx, ins, config);
         if (ret == -1) {
-            flb_tail_config_destroy(ctx);
+            flb_tailx_config_destroy(ctx);
             return NULL;
         }
     }
@@ -159,9 +154,9 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
 
     /* Config: Docker mode */
     if(ctx->docker_mode == FLB_TRUE) {
-        ret = flb_tail_dmode_create(ctx, ins, config);
+        ret = flb_tailx_dmode_create(ctx, ins, config);
         if (ret == -1) {
-            flb_tail_config_destroy(ctx);
+            flb_tailx_config_destroy(ctx);
             return NULL;
         }
     }
@@ -237,7 +232,7 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
     /* Initialize database */
     tmp = flb_input_get_property("db", ins);
     if (tmp) {
-        ctx->db = flb_tail_db_open(tmp, ins, ctx, config);
+        ctx->db = flb_tailx_db_open(tmp, ins, ctx, config);
         if (!ctx->db) {
             flb_plg_error(ctx->ins, "could not open/create database");
         }
@@ -252,7 +247,7 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
                                  0);
         if (ret != SQLITE_OK) {
             flb_plg_error(ctx->ins, "error preparing database SQL statement");
-            flb_tail_config_destroy(ctx);
+            flb_tailx_config_destroy(ctx);
             return NULL;
         }
     }
@@ -270,11 +265,11 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *ins,
     return ctx;
 }
 
-int flb_tail_config_destroy(struct flb_tail_config *config)
+int flb_tailx_config_destroy(struct flb_tailx_config *config)
 {
 
 #ifdef FLB_HAVE_PARSER
-    flb_tail_mult_destroy(config);
+    flb_tailx_mult_destroy(config);
 #endif
 
     /* Close pipe ends */
@@ -292,7 +287,7 @@ int flb_tail_config_destroy(struct flb_tail_config *config)
 #ifdef FLB_HAVE_SQLDB
     if (config->db != NULL) {
         sqlite3_finalize(config->stmt_offset);
-        flb_tail_db_close(config->db);
+        flb_tailx_db_close(config->db);
     }
 #endif
 

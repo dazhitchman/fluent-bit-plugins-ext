@@ -31,7 +31,7 @@
 #include "tail_scan_glob.c"
 #endif
 
-int flb_tail_scan(struct mk_list *path_list, struct flb_tail_config *ctx)
+int flb_tailx_scan(struct mk_list *path_list, struct flb_tailx_config *ctx)
 {
     int ret;
     struct mk_list *head;
@@ -56,14 +56,14 @@ int flb_tail_scan(struct mk_list *path_list, struct flb_tail_config *ctx)
  * Triggered by refresh_interval, it re-scan the path looking for new files
  * that match the original path pattern.
  */
-int flb_tail_scan_callback(struct flb_input_instance *ins,
+int flb_tailx_scan_callback(struct flb_input_instance *ins,
                            struct flb_config *config, void *context)
 {
     int ret;
-    struct flb_tail_config *ctx = context;
+    struct flb_tailx_config *ctx = context;
     (void) config;
 
-    ret = flb_tail_scan(ctx->path_list, ctx);
+    ret = flb_tailx_scan(ctx->path_list, ctx);
     if (ret > 0) {
         flb_plg_debug(ins, "%i new files found for '%s'", ret);
     }

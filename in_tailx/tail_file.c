@@ -118,9 +118,9 @@ static int append_record_to_map(char **data, size_t *data_size,
     return 0;
 }
 
-int flb_tail_pack_line_map(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
+int flb_tailx_pack_line_map(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
                            struct flb_time *time, char **data,
-                           size_t *data_size, struct flb_tail_file *file)
+                           size_t *data_size, struct flb_tailx_file *file)
 {
     int map_num = 1;
 
@@ -142,12 +142,12 @@ int flb_tail_pack_line_map(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
     return 0;
 }
 
-int flb_tail_file_pack_line(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
+int flb_tailx_file_pack_line(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
                             struct flb_time *time, char *data, size_t data_size,
-                            struct flb_tail_file *file)
+                            struct flb_tailx_file *file)
 {
     int map_num = 1;
-    struct flb_tail_config *ctx = file->config;
+    struct flb_tailx_config *ctx = file->config;
 
     if (file->config->path_key != NULL) {
         map_num++; /* to append path_key */
@@ -173,7 +173,7 @@ int flb_tail_file_pack_line(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
     return 0;
 }
 
-static int process_content(struct flb_tail_file *file, off_t *bytes)
+static int process_content(struct flb_tailx_file *file, off_t *bytes)
 {
     int len;
     int lines = 0;
@@ -195,7 +195,7 @@ static int process_content(struct flb_tail_file *file, off_t *bytes)
     msgpack_packer mp_pck;
     msgpack_sbuffer *out_sbuf;
     msgpack_packer *out_pck;
-    struct flb_tail_config *ctx = file->config;
+    struct flb_tailx_config *ctx = file->config;
 
     /* Create a temporary msgpack buffer */
     msgpack_sbuffer_init(&mp_sbuf);
@@ -239,7 +239,7 @@ static int process_content(struct flb_tail_file *file, off_t *bytes)
         repl_line = NULL;
 
         if (ctx->docker_mode) {
-            ret = flb_tail_dmode_process_content(now, line, line_len,
+            ret = flb_tailx_dmode_process_content(now, line, line_len,
                                                  &repl_line, &repl_line_len,
                                                  file, ctx, out_sbuf, out_pck);
             if (ret >= 0) {
@@ -254,7 +254,7 @@ static int process_content(struct flb_tail_file *file, off_t *bytes)
                 goto go_next;
             }
             else {
-                flb_tail_dmode_flush(out_sbuf, out_pck, file, ctx);
+                flb_tailx_dmode_flush(out_sbuf, out_pck, file, ctx);
             }
         }
 
@@ -277,31 +277,31 @@ static int process_content(struct flb_tail_file *file, off_t *bytes)
 
                 /* If multiline is enabled, flush any buffered data */
                 if (ctx->multiline == FLB_TRUE) {
-                    flb_tail_mult_flush(out_sbuf, out_pck, file, ctx);
+                    flb_tailx_mult_flush(out_sbuf, out_pck, file, ctx);
                 }
 
-                flb_tail_pack_line_map(out_sbuf, out_pck, &out_time,
+                flb_tailx_pack_line_map(out_sbuf, out_pck, &out_time,
                                        (char**) &out_buf, &out_size, file);
                 flb_free(out_buf);
             }
             else {
                 /* Parser failed, pack raw text */
                 flb_time_get(&out_time);
-                flb_tail_file_pack_line(out_sbuf, out_pck, &out_time,
+                flb_tailx_file_pack_line(out_sbuf, out_pck, &out_time,
                                         data, len, file);
             }
         }
         else if (ctx->multiline == FLB_TRUE) {
-            ret = flb_tail_mult_process_content(now,
+            ret = flb_tailx_mult_process_content(now,
                                                 line, line_len, file, ctx);
 
             /* No multiline */
             if (ret == FLB_TAIL_MULT_NA) {
 
-                flb_tail_mult_flush(out_sbuf, out_pck, file, ctx);
+                flb_tailx_mult_flush(out_sbuf, out_pck, file, ctx);
 
                 flb_time_get(&out_time);
-                flb_tail_file_pack_line(out_sbuf, out_pck, &out_time,
+                flb_tailx_file_pack_line(out_sbuf, out_pck, &out_time,
                                         line, line_len, file);
             }
             else if (ret == FLB_TAIL_MULT_MORE) {
@@ -314,12 +314,12 @@ static int process_content(struct flb_tail_file *file, off_t *bytes)
         }
         else {
             flb_time_get(&out_time);
-            flb_tail_file_pack_line(out_sbuf, out_pck, &out_time,
+            flb_tailx_file_pack_line(out_sbuf, out_pck, &out_time,
                                     line, line_len, file);
         }
 #else
         flb_time_get(&out_time);
-        flb_tail_file_pack_line(out_sbuf, out_pck, &out_time,
+        flb_tailx_file_pack_line(out_sbuf, out_pck, &out_time,
                                 line, line_len, file);
 #endif
 
@@ -370,10 +370,10 @@ static void cb_results(const char *name, const char *value,
 #ifdef FLB_HAVE_REGEX
 static int tag_compose(char *tag, struct flb_regex *tag_regex, char *fname,
                        char *out_buf, size_t *out_size,
-                       struct flb_tail_config *ctx)
+                       struct flb_tailx_config *ctx)
 #else
 static int tag_compose(char *tag, char *fname, char *out_buf, size_t *out_size,
-                       struct flb_tail_config *ctx)
+                       struct flb_tailx_config *ctx)
 #endif
 {
     int i;
@@ -514,15 +514,15 @@ static int tag_compose(char *tag, char *fname, char *out_buf, size_t *out_size,
     return 0;
 }
 
-static inline int flb_tail_file_exists(struct stat *st,
-                                       struct flb_tail_config *ctx)
+static inline int flb_tailx_file_exists(struct stat *st,
+                                       struct flb_tailx_config *ctx)
 {
     struct mk_list *head;
-    struct flb_tail_file *file;
+    struct flb_tailx_file *file;
 
     /* Iterate static list */
     mk_list_foreach(head, &ctx->files_static) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         if (file->inode == st->st_ino) {
             return FLB_TRUE;
         }
@@ -530,7 +530,7 @@ static inline int flb_tail_file_exists(struct stat *st,
 
     /* Iterate dynamic list */
     mk_list_foreach(head, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         if (file->inode == st->st_ino) {
             return FLB_TRUE;
         }
@@ -539,8 +539,8 @@ static inline int flb_tail_file_exists(struct stat *st,
     return FLB_FALSE;
 }
 
-int flb_tail_file_append(char *path, struct stat *st, int mode,
-                         struct flb_tail_config *ctx)
+int flb_tailx_file_append(char *path, struct stat *st, int mode,
+                         struct flb_tailx_config *ctx)
 {
     int fd;
     int ret;
@@ -548,13 +548,13 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
     off_t offset;
     char *tag;
     size_t tag_len;
-    struct flb_tail_file *file;
+    struct flb_tailx_file *file;
 
     if (!S_ISREG(st->st_mode)) {
         return -1;
     }
 
-    if (flb_tail_file_exists(st, ctx) == FLB_TRUE) {
+    if (flb_tailx_file_exists(st, ctx) == FLB_TRUE) {
         return -1;
     }
 
@@ -565,7 +565,7 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
         return -1;
     }
 
-    file = flb_calloc(1, sizeof(struct flb_tail_file));
+    file = flb_calloc(1, sizeof(struct flb_tailx_file));
     if (!file) {
         flb_errno();
         goto error;
@@ -596,7 +596,7 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
      * we can trust the file name but in others it's better to solve it
      * with some extra calls.
      */
-    ret = flb_tail_file_name_dup(path, file);
+    ret = flb_tailx_file_name_dup(path, file);
     if (!file->name) {
         flb_errno();
         goto error;
@@ -678,7 +678,7 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
         mk_list_add(&file->_head, &ctx->files_event);
 
         /* Register this file into the fs_event monitoring */
-        ret = flb_tail_fs_add(file);
+        ret = flb_tailx_fs_add(file);
         if (ret == -1) {
             flb_plg_error(ctx->ins, "could not register file into fs_events");
             goto error;
@@ -691,7 +691,7 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
      */
 #ifdef FLB_HAVE_SQLDB
     if (ctx->db) {
-        flb_tail_db_file_set(file, ctx);
+        flb_tailx_db_file_set(file, ctx);
     }
 #endif
 
@@ -702,7 +702,7 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
         offset = lseek(file->fd, file->offset, SEEK_SET);
         if (offset == -1) {
             flb_errno();
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             goto error;
         }
     }
@@ -731,9 +731,9 @@ error:
     return -1;
 }
 
-void flb_tail_file_remove(struct flb_tail_file *file)
+void flb_tailx_file_remove(struct flb_tailx_file *file)
 {
-    struct flb_tail_config *ctx;
+    struct flb_tailx_config *ctx;
 
     ctx = file->config;
 
@@ -747,7 +747,7 @@ void flb_tail_file_remove(struct flb_tail_file *file)
          * was rotated and it's not longer being monitored.
          */
         if (ctx->db) {
-            flb_tail_db_file_delete(file, file->config);
+            flb_tailx_db_file_delete(file, file->config);
         }
 #endif
         mk_list_del(&file->_rotate_head);
@@ -756,7 +756,7 @@ void flb_tail_file_remove(struct flb_tail_file *file)
     flb_sds_destroy(file->dmode_buf);
     flb_sds_destroy(file->dmode_lastline);
     mk_list_del(&file->_head);
-    flb_tail_fs_remove(file);
+    flb_tailx_fs_remove(file);
     close(file->fd);
     if (file->tag_buf) {
         flb_free(file->tag_buf);
@@ -773,29 +773,29 @@ void flb_tail_file_remove(struct flb_tail_file *file)
     flb_free(file);
 }
 
-int flb_tail_file_remove_all(struct flb_tail_config *ctx)
+int flb_tailx_file_remove_all(struct flb_tailx_config *ctx)
 {
     int count = 0;
     struct mk_list *head;
     struct mk_list *tmp;
-    struct flb_tail_file *file;
+    struct flb_tailx_file *file;
 
     mk_list_foreach_safe(head, tmp, &ctx->files_static) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
-        flb_tail_file_remove(file);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
+        flb_tailx_file_remove(file);
         count++;
     }
 
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
-        flb_tail_file_remove(file);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
+        flb_tailx_file_remove(file);
         count++;
     }
 
     return count;
 }
 
-int flb_tail_file_chunk(struct flb_tail_file *file)
+int flb_tailx_file_chunk(struct flb_tailx_file *file)
 {
     int ret;
     char *tmp;
@@ -804,7 +804,7 @@ int flb_tail_file_chunk(struct flb_tail_file *file)
     off_t processed_bytes;
     ssize_t bytes;
     struct stat st;
-    struct flb_tail_config *ctx;
+    struct flb_tailx_config *ctx;
 
     /* Check if we the engine issued a pause */
     ctx = file->config;
@@ -890,7 +890,7 @@ int flb_tail_file_chunk(struct flb_tail_file *file)
 
 #ifdef FLB_HAVE_SQLDB
         if (file->config->db) {
-            flb_tail_db_file_offset(file, file->config);
+            flb_tailx_db_file_offset(file, file->config);
         }
 #endif
 
@@ -929,8 +929,8 @@ int flb_tail_file_chunk(struct flb_tail_file *file)
 }
 
 /* Returns FLB_TRUE if a file has been rotated, otherwise FLB_FALSE */
-int flb_tail_file_is_rotated(struct flb_tail_config *ctx,
-                             struct flb_tail_file *file)
+int flb_tailx_file_is_rotated(struct flb_tailx_config *ctx,
+                             struct flb_tailx_file *file)
 {
     int ret;
     char *name;
@@ -971,7 +971,7 @@ int flb_tail_file_is_rotated(struct flb_tail_config *ctx,
     }
 
     /* Retrieve the real file name, operating system lookup */
-    name = flb_tail_file_name(file);
+    name = flb_tailx_file_name(file);
     if (!name) {
         flb_plg_error(ctx->ins,
                       "inode=%"PRIu64" cannot detect if file was rotated: %s",
@@ -990,7 +990,7 @@ int flb_tail_file_is_rotated(struct flb_tail_config *ctx,
 
     /* Compare inodes and names */
     if (file->inode == st.st_ino &&
-        flb_tail_target_file_name_cmp(name, file) == 0) {
+        flb_tailx_target_file_name_cmp(name, file) == 0) {
         flb_free(name);
         return FLB_FALSE;
     }
@@ -1003,11 +1003,11 @@ int flb_tail_file_is_rotated(struct flb_tail_config *ctx,
 }
 
 /* Promote a event in the static list to the dynamic 'events' interface */
-int flb_tail_file_to_event(struct flb_tail_file *file)
+int flb_tailx_file_to_event(struct flb_tailx_file *file)
 {
     int ret;
     struct stat st;
-    struct flb_tail_config *ctx = file->config;
+    struct flb_tailx_config *ctx = file->config;
 
     /* Check if the file promoted have pending bytes */
     ret = fstat(file->fd, &st);
@@ -1025,13 +1025,13 @@ int flb_tail_file_to_event(struct flb_tail_file *file)
     }
 
     /* Check if the file has been rotated */
-    ret = flb_tail_file_is_rotated(ctx, file);
+    ret = flb_tailx_file_is_rotated(ctx, file);
     if (ret == FLB_TRUE) {
-        flb_tail_file_rotated(file);
+        flb_tailx_file_rotated(file);
     }
 
     /* Notify the fs-event handler that we will start monitoring this 'file' */
-    ret = flb_tail_fs_add(file);
+    ret = flb_tailx_fs_add(file);
     if (ret == -1) {
         return -1;
     }
@@ -1048,7 +1048,7 @@ int flb_tail_file_to_event(struct flb_tail_file *file)
  * Given an open file descriptor, return the filename. This function is a
  * bit slow and it aims to be used only when a file is rotated.
  */
-char *flb_tail_file_name(struct flb_tail_file *file)
+char *flb_tailx_file_name(struct flb_tailx_file *file)
 {
     int ret;
     char *buf;
@@ -1123,7 +1123,7 @@ char *flb_tail_file_name(struct flb_tail_file *file)
     return buf;
 }
 
-int flb_tail_file_name_dup(char *path, struct flb_tail_file *file)
+int flb_tailx_file_name_dup(char *path, struct flb_tailx_file *file)
 {
     file->name = flb_strdup(path);
     if (!file->name) {
@@ -1135,7 +1135,7 @@ int flb_tail_file_name_dup(char *path, struct flb_tail_file *file)
     if (file->real_name) {
         flb_free(file->real_name);
     }
-    file->real_name = flb_tail_file_name(file);
+    file->real_name = flb_tailx_file_name(file);
     if (!file->real_name) {
         flb_errno();
         flb_free(file->name);
@@ -1147,16 +1147,16 @@ int flb_tail_file_name_dup(char *path, struct flb_tail_file *file)
 }
 
 /* Invoked every time a file was rotated */
-int flb_tail_file_rotated(struct flb_tail_file *file)
+int flb_tailx_file_rotated(struct flb_tailx_file *file)
 {
     int ret;
     char *name;
     char *tmp;
     struct stat st;
-    struct flb_tail_config *ctx = file->config;
+    struct flb_tailx_config *ctx = file->config;
 
     /* Get the new file name */
-    name = flb_tail_file_name(file);
+    name = flb_tailx_file_name(file);
     if (!name) {
         return -1;
     }
@@ -1166,7 +1166,7 @@ int flb_tail_file_rotated(struct flb_tail_file *file)
 
     /* Update local file entry */
     tmp = file->name;
-    flb_tail_file_name_dup(name, file);
+    flb_tailx_file_name_dup(name, file);
     flb_plg_info(ctx->ins, "inode=%"PRIu64" handle rotation(): %s => %s",
                  file->inode, tmp, file->name);
     if (file->rotated == 0) {
@@ -1176,7 +1176,7 @@ int flb_tail_file_rotated(struct flb_tail_file *file)
     /* Rotate the file in the database */
 #ifdef FLB_HAVE_SQLDB
         if (file->config->db) {
-            ret = flb_tail_db_file_rotate(name, file, file->config);
+            ret = flb_tailx_db_file_rotate(name, file, file->config);
             if (ret == -1) {
                 flb_plg_error(ctx->ins, "could not rotate file %s->%s in database",
                               file->name, name);
@@ -1192,10 +1192,10 @@ int flb_tail_file_rotated(struct flb_tail_file *file)
         /* Check if a new file has been created */
         ret = stat(tmp, &st);
         if (ret == 0 && st.st_ino != file->inode) {
-            if (flb_tail_file_exists(&st, ctx) == FLB_FALSE) {
-                ret = flb_tail_file_append(tmp, &st, FLB_TAIL_STATIC, ctx);
+            if (flb_tailx_file_exists(&st, ctx) == FLB_FALSE) {
+                ret = flb_tailx_file_append(tmp, &st, FLB_TAIL_STATIC, ctx);
                 if (ret == -1) {
-                    flb_tail_scan(ctx->path_list, ctx);
+                    flb_tailx_scan(ctx->path_list, ctx);
                 }
                 else {
                     tail_signal_manager(file->config);
@@ -1209,8 +1209,8 @@ int flb_tail_file_rotated(struct flb_tail_file *file)
     return 0;
 }
 
-static int check_purge_deleted_file(struct flb_tail_config *ctx,
-                                    struct flb_tail_file *file)
+static int check_purge_deleted_file(struct flb_tailx_config *ctx,
+                                    struct flb_tailx_file *file)
 {
     int ret;
     struct stat st;
@@ -1218,7 +1218,7 @@ static int check_purge_deleted_file(struct flb_tail_config *ctx,
     ret = fstat(file->fd, &st);
     if (ret == -1) {
         flb_plg_debug(ctx->ins, "error stat(2) %s, removing", file->name);
-        flb_tail_file_remove(file);
+        flb_tailx_file_remove(file);
         return FLB_TRUE;
     }
 
@@ -1228,11 +1228,11 @@ static int check_purge_deleted_file(struct flb_tail_config *ctx,
 #ifdef FLB_HAVE_SQLDB
         if (ctx->db) {
             /* Remove file entry from the database */
-            flb_tail_db_file_delete(file, file->config);
+            flb_tailx_db_file_delete(file, file->config);
         }
 #endif
         /* Remove file from the monitored list */
-        flb_tail_file_remove(file);
+        flb_tailx_file_remove(file);
         return FLB_TRUE;
     }
 
@@ -1240,22 +1240,22 @@ static int check_purge_deleted_file(struct flb_tail_config *ctx,
 }
 
 /* Purge rotated and deleted files */
-int flb_tail_file_purge(struct flb_input_instance *ins,
+int flb_tailx_file_purge(struct flb_input_instance *ins,
                         struct flb_config *config, void *context)
 {
     int ret;
     int count = 0;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tail_file *file;
-    struct flb_tail_config *ctx = context;
+    struct flb_tailx_file *file;
+    struct flb_tailx_config *ctx = context;
     time_t now;
     struct stat st;
 
     /* Rotated files */
     now = time(NULL);
     mk_list_foreach_safe(head, tmp, &ctx->files_rotated) {
-        file = mk_list_entry(head, struct flb_tail_file, _rotate_head);
+        file = mk_list_entry(head, struct flb_tailx_file, _rotate_head);
         if ((file->rotated + ctx->rotate_wait) <= now) {
             ret = fstat(file->fd, &st);
             if (ret == 0) {
@@ -1275,7 +1275,7 @@ int flb_tail_file_purge(struct flb_input_instance *ins,
                               file->inode, file->name, file->offset);
             }
 
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             count++;
         }
     }
@@ -1287,11 +1287,11 @@ int flb_tail_file_purge(struct flb_input_instance *ins,
      * if they have been deleted or not.
      */
     mk_list_foreach_safe(head, tmp, &ctx->files_static) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         check_purge_deleted_file(ctx, file);
     }
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         check_purge_deleted_file(ctx, file);
     }
 

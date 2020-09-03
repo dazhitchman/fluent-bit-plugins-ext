@@ -115,7 +115,7 @@ static char *expand_tilde(const char *path)
 }
 #endif
 
-static int tail_is_excluded(char *path, struct flb_tail_config *ctx)
+static int tail_is_excluded(char *path, struct flb_tailx_config *ctx)
 {
     struct mk_list *head;
     struct flb_slist_entry *pattern;
@@ -185,7 +185,7 @@ static inline int do_glob(const char *pattern, int flags,
 }
 
 /* Scan a path, register the entries and return how many */
-static int tail_scan_path(const char *path, struct flb_tail_config *ctx)
+static int tail_scan_path(const char *path, struct flb_tailx_config *ctx)
 {
     int i;
     int ret;
@@ -198,7 +198,8 @@ static int tail_scan_path(const char *path, struct flb_tail_config *ctx)
     /* Safe reset for globfree() */
     globbuf.gl_pathv = NULL;
 
-    int flags = (ctx->ignore_glob_errors) ? GLOB_TILDE : GLOB_TILDE | GLOB_ERR ;
+    //int flags = (ctx->ignore_glob_read_errors) ? GLOB_TILDE : GLOB_TILDE | GLOB_ERR ;
+    int flags = (ctx->ignore_glob_read_errors) ? GLOB_MARK : GLOB_MARK | GLOB_ERR ;
     /* Scan the given path */
     ret = do_glob(path, flags, NULL, &globbuf);
     if (ret != 0) {
@@ -238,7 +239,7 @@ static int tail_scan_path(const char *path, struct flb_tail_config *ctx)
             }
 
             /* Append file to list */
-            ret = flb_tail_file_append(globbuf.gl_pathv[i], &st,
+            ret = flb_tailx_file_append(globbuf.gl_pathv[i], &st,
                                        FLB_TAIL_STATIC, ctx);
             if (ret == 0) {
                 flb_plg_debug(ctx->ins, "scan_glob add(): %s, inode %li",

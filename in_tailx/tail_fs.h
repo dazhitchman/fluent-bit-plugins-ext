@@ -27,12 +27,12 @@
 #include "tail_config.h"
 #include "tail_file_internal.h"
 
-int flb_tail_fs_init(struct flb_input_instance *in,
-                     struct flb_tail_config *ctx, struct flb_config *config);
-int flb_tail_fs_add(struct flb_tail_file *file);
-int flb_tail_fs_remove(struct flb_tail_file *file);
-int flb_tail_fs_exit(struct flb_tail_config *ctx);
-void flb_tail_fs_pause(struct flb_tail_config *ctx);
-void flb_tail_fs_resume(struct flb_tail_config *ctx);
+int flb_tailx_fs_init(struct flb_input_instance *in,
+                     struct flb_tailx_config *ctx, struct flb_config *config);
+int flb_tailx_fs_add(struct flb_tailx_file *file);
+int flb_tailx_fs_remove(struct flb_tailx_file *file);
+int flb_tailx_fs_exit(struct flb_tailx_config *ctx);
+void flb_tailx_fs_pause(struct flb_tailx_config *ctx);
+void flb_tailx_fs_resume(struct flb_tailx_config *ctx);
 
 #endif

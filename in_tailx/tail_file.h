@@ -40,8 +40,8 @@
 #define FLB_HASH_TABLE_SIZE 50
 #endif
 
-static inline int flb_tail_target_file_name_cmp(char *name,
-                                                struct flb_tail_file *file)
+static inline int flb_tailx_target_file_name_cmp(char *name,
+                                                struct flb_tailx_file *file)
 {
     int ret;
     char *name_a = NULL;
@@ -94,24 +94,24 @@ static inline int flb_tail_target_file_name_cmp(char *name,
     return ret;
 }
 
-int flb_tail_file_name_dup(char *path, struct flb_tail_file *file);
-int flb_tail_file_to_event(struct flb_tail_file *file);
-int flb_tail_file_chunk(struct flb_tail_file *file);
-int flb_tail_file_append(char *path, struct stat *st, int mode,
-                         struct flb_tail_config *ctx);
-void flb_tail_file_remove(struct flb_tail_file *file);
-int flb_tail_file_remove_all(struct flb_tail_config *ctx);
-char *flb_tail_file_name(struct flb_tail_file *file);
-int flb_tail_file_is_rotated(struct flb_tail_config *ctx,
-                             struct flb_tail_file *file);
-int flb_tail_file_rotated(struct flb_tail_file *file);
-int flb_tail_file_purge(struct flb_input_instance *ins,
+int flb_tailx_file_name_dup(char *path, struct flb_tailx_file *file);
+int flb_tailx_file_to_event(struct flb_tailx_file *file);
+int flb_tailx_file_chunk(struct flb_tailx_file *file);
+int flb_tailx_file_append(char *path, struct stat *st, int mode,
+                         struct flb_tailx_config *ctx);
+void flb_tailx_file_remove(struct flb_tailx_file *file);
+int flb_tailx_file_remove_all(struct flb_tailx_config *ctx);
+char *flb_tailx_file_name(struct flb_tailx_file *file);
+int flb_tailx_file_is_rotated(struct flb_tailx_config *ctx,
+                             struct flb_tailx_file *file);
+int flb_tailx_file_rotated(struct flb_tailx_file *file);
+int flb_tailx_file_purge(struct flb_input_instance *ins,
                         struct flb_config *config, void *context);
-int flb_tail_pack_line_map(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
+int flb_tailx_pack_line_map(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
                            struct flb_time *time, char **data,
-                           size_t *data_size, struct flb_tail_file *file);
-int flb_tail_file_pack_line(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
+                           size_t *data_size, struct flb_tailx_file *file);
+int flb_tailx_file_pack_line(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
                             struct flb_time *time, char *data, size_t data_size,
-                            struct flb_tail_file *file);
+                            struct flb_tailx_file *file);
 
 #endif

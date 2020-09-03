@@ -39,8 +39,8 @@
 
 #include <sys/ioctl.h>
 
-static int debug_event_mask(struct flb_tail_config *ctx,
-                            struct flb_tail_file *file,
+static int debug_event_mask(struct flb_tailx_config *ctx,
+                            struct flb_tailx_file *file,
                             uint32_t mask)
 {
     flb_sds_t buf;
@@ -86,12 +86,12 @@ static int debug_event_mask(struct flb_tail_config *ctx,
     return 0;
 }
 
-static int tail_fs_add(struct flb_tail_file *file, int check_rotated)
+static int tail_fs_add(struct flb_tailx_file *file, int check_rotated)
 {
     int flags;
     int watch_fd;
     char *name;
-    struct flb_tail_config *ctx = file->config;
+    struct flb_tailx_config *ctx = file->config;
 
     /*
      * If there is no watcher associated, we only want to monitor events if
@@ -124,7 +124,7 @@ static int tail_fs_add(struct flb_tail_file *file, int check_rotated)
      * 6. conflict: inotify_add_watch() receives the path 'a.log',
      */
 
-    name = flb_tail_file_name(file);
+    name = flb_tailx_file_name(file);
     if (!name) {
         flb_plg_error(ctx->ins, "inode=%"PRIu64" cannot get real filename for inotify",
                       file->inode);
@@ -150,7 +150,7 @@ static int tail_fs_add(struct flb_tail_file *file, int check_rotated)
     return 0;
 }
 
-static int flb_tail_fs_add_rotated(struct flb_tail_file *file)
+static int flb_tailx_fs_add_rotated(struct flb_tailx_file *file)
 {
     return tail_fs_add(file, FLB_FALSE);
 }
@@ -162,8 +162,8 @@ static int tail_fs_event(struct flb_input_instance *ins,
     off_t offset;
     struct mk_list *head;
     struct mk_list *tmp;
-    struct flb_tail_config *ctx = in_context;
-    struct flb_tail_file *file = NULL;
+    struct flb_tailx_config *ctx = in_context;
+    struct flb_tailx_file *file = NULL;
     struct inotify_event ev;
     struct stat st;
 
@@ -175,7 +175,7 @@ static int tail_fs_event(struct flb_input_instance *ins,
 
     /* Lookup watched file */
     mk_list_foreach_safe(head, tmp, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
         if (file->watch_fd != ev.wd) {
             file = NULL;
             continue;
@@ -202,16 +202,16 @@ static int tail_fs_event(struct flb_input_instance *ins,
                       file->inode, file->name);
 
         /* A rotated file must be re-registered */
-        flb_tail_file_rotated(file);
-        flb_tail_fs_remove(file);
-        flb_tail_fs_add_rotated(file);
+        flb_tailx_file_rotated(file);
+        flb_tailx_fs_remove(file);
+        flb_tailx_fs_add_rotated(file);
     }
 
     ret = fstat(file->fd, &st);
     if (ret == -1) {
         flb_plg_debug(ins, "inode=%"PRIu64" error stat(2) %s, removing",
                       file->inode, file->name);
-        flb_tail_file_remove(file);
+        flb_tailx_file_remove(file);
         return 0;
     }
     file->size = st.st_size;
@@ -227,11 +227,11 @@ static int tail_fs_event(struct flb_input_instance *ins,
 #ifdef FLB_HAVE_SQLDB
             if (ctx->db) {
                 /* Remove file entry from the database */
-                flb_tail_db_file_delete(file, ctx);
+                flb_tailx_db_file_delete(file, ctx);
             }
 #endif
             /* Remove file from the monitored list */
-            flb_tail_file_remove(file);
+            flb_tailx_file_remove(file);
             return 0;
         }
     }
@@ -258,14 +258,14 @@ static int tail_fs_event(struct flb_input_instance *ins,
             /* Update offset in the database file */
 #ifdef FLB_HAVE_SQLDB
             if (ctx->db) {
-                flb_tail_db_file_offset(file, ctx);
+                flb_tailx_db_file_offset(file, ctx);
             }
 #endif
         }
     }
 
     /* Collect the data */
-    ret = in_tail_collect_event(file, config);
+    ret = in_tailx_collect_event(file, config);
     if (ret != FLB_TAIL_ERROR) {
         /*
          * Due to read buffer size capacity, there are some cases where the
@@ -291,8 +291,8 @@ static int tail_fs_event(struct flb_input_instance *ins,
 }
 
 /* File System events based on Inotify(2). Linux >= 2.6.32 is suggested */
-int flb_tail_fs_init(struct flb_input_instance *in,
-                     struct flb_tail_config *ctx, struct flb_config *config)
+int flb_tailx_fs_init(struct flb_input_instance *in,
+                     struct flb_tailx_config *ctx, struct flb_config *config)
 {
     int fd;
     int ret;
@@ -318,20 +318,20 @@ int flb_tail_fs_init(struct flb_input_instance *in,
     return 0;
 }
 
-void flb_tail_fs_pause(struct flb_tail_config *ctx)
+void flb_tailx_fs_pause(struct flb_tailx_config *ctx)
 {
     flb_input_collector_pause(ctx->coll_fd_fs1, ctx->ins);
 }
 
-void flb_tail_fs_resume(struct flb_tail_config *ctx)
+void flb_tailx_fs_resume(struct flb_tailx_config *ctx)
 {
     flb_input_collector_resume(ctx->coll_fd_fs1, ctx->ins);
 }
 
-int flb_tail_fs_add(struct flb_tail_file *file)
+int flb_tailx_fs_add(struct flb_tailx_file *file)
 {
     int ret;
-    struct flb_tail_config *ctx = file->config;
+    struct flb_tailx_config *ctx = file->config;
 
     ret = tail_fs_add(file, FLB_TRUE);
     if (ret == -1) {
@@ -343,7 +343,7 @@ int flb_tail_fs_add(struct flb_tail_file *file)
     return 0;
 }
 
-int flb_tail_fs_remove(struct flb_tail_file *file)
+int flb_tailx_fs_remove(struct flb_tailx_file *file)
 {
     if (file->watch_fd == -1) {
         return 0;
@@ -357,7 +357,7 @@ int flb_tail_fs_remove(struct flb_tail_file *file)
     return 0;
 }
 
-int flb_tail_fs_exit(struct flb_tail_config *ctx)
+int flb_tailx_fs_exit(struct flb_tailx_config *ctx)
 {
     (void) ctx;
     return 0;

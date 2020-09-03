@@ -27,7 +27,7 @@
 #include "tail_dockermode.h"
 #include "tail_file_internal.h"
 
-int flb_tail_dmode_create(struct flb_tail_config *ctx,
+int flb_tailx_dmode_create(struct flb_tailx_config *ctx,
                           struct flb_input_instance *ins,
                           struct flb_config *config)
 {
@@ -234,11 +234,11 @@ static int use_sds(char *str, size_t len, char **out, size_t *out_len, void *dat
     return 0;
 }
 
-int flb_tail_dmode_process_content(time_t now,
+int flb_tailx_dmode_process_content(time_t now,
                                    char* line, size_t line_len,
                                    char **repl_line, size_t *repl_line_len,
-                                   struct flb_tail_file *file,
-                                   struct flb_tail_config *ctx,
+                                   struct flb_tailx_file *file,
+                                   struct flb_tailx_config *ctx,
                                    msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck
                                    )
 {
@@ -265,7 +265,7 @@ int flb_tail_dmode_process_content(time_t now,
             * as current line meets first-line requirement
             */
             if(ret >= 0) {
-                flb_tail_dmode_flush(mp_sbuf, mp_pck, file, ctx);
+                flb_tailx_dmode_flush(mp_sbuf, mp_pck, file, ctx);
             }
         }
     }
@@ -306,18 +306,18 @@ int flb_tail_dmode_process_content(time_t now,
             file->dmode_complete = true;
 #ifdef FLB_HAVE_REGEX
             if (!ctx->docker_mode_parser) {
-                flb_tail_dmode_flush(mp_sbuf, mp_pck, file, ctx);
+                flb_tailx_dmode_flush(mp_sbuf, mp_pck, file, ctx);
             }
 #else
-            flb_tail_dmode_flush(mp_sbuf, mp_pck, file, ctx);
+            flb_tailx_dmode_flush(mp_sbuf, mp_pck, file, ctx);
 #endif
         }
     }
     return ret;
 }
 
-void flb_tail_dmode_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
-                          struct flb_tail_file *file, struct flb_tail_config *ctx)
+void flb_tailx_dmode_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
+                          struct flb_tailx_file *file, struct flb_tailx_config *ctx)
 {
     int ret;
     char *repl_line = NULL;
@@ -357,13 +357,13 @@ void flb_tail_dmode_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
             if (ctx->ignore_older > 0 && (now - ctx->ignore_older) > out_time.tm.tv_sec) {
                 goto dmode_flush_end;
             }
-            flb_tail_pack_line_map(mp_sbuf, mp_pck, &out_time,
+            flb_tailx_pack_line_map(mp_sbuf, mp_pck, &out_time,
                                    (char**) &out_buf, &out_size, file);
             goto dmode_flush_end;        }
     }
 #endif
     flb_time_get(&out_time);
-    flb_tail_file_pack_line(mp_sbuf, mp_pck, &out_time,
+    flb_tailx_file_pack_line(mp_sbuf, mp_pck, &out_time,
                             repl_line, repl_line_len, file);
 
  dmode_flush_end:
@@ -371,21 +371,21 @@ void flb_tail_dmode_flush(msgpack_sbuffer *mp_sbuf, msgpack_packer *mp_pck,
     flb_free(out_buf);
 }
 
-int flb_tail_dmode_pending_flush(struct flb_input_instance *ins,
+int flb_tailx_dmode_pending_flush(struct flb_input_instance *ins,
                                  struct flb_config *config, void *context)
 {
     time_t now;
     msgpack_sbuffer mp_sbuf;
     msgpack_packer mp_pck;
     struct mk_list *head;
-    struct flb_tail_file *file;
-    struct flb_tail_config *ctx = context;
+    struct flb_tailx_file *file;
+    struct flb_tailx_config *ctx = context;
 
     now = time(NULL);
 
     /* Iterate promoted event files with pending bytes */
     mk_list_foreach(head, &ctx->files_event) {
-        file = mk_list_entry(head, struct flb_tail_file, _head);
+        file = mk_list_entry(head, struct flb_tailx_file, _head);
 
         if (file->dmode_flush_timeout > now) {
             continue;
@@ -398,7 +398,7 @@ int flb_tail_dmode_pending_flush(struct flb_input_instance *ins,
         msgpack_sbuffer_init(&mp_sbuf);
         msgpack_packer_init(&mp_pck, &mp_sbuf, msgpack_sbuffer_write);
 
-        flb_tail_dmode_flush(&mp_sbuf, &mp_pck, file, ctx);
+        flb_tailx_dmode_flush(&mp_sbuf, &mp_pck, file, ctx);
 
         flb_input_chunk_append_raw(ins,
                                    file->tag_buf,

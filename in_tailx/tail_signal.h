@@ -23,7 +23,7 @@
 
 #include "tail_config.h"
 
-static inline int tail_signal_manager(struct flb_tail_config *ctx)
+static inline int tail_signal_manager(struct flb_tailx_config *ctx)
 {
     int n;
     uint64_t val = 0xc001;
@@ -56,7 +56,7 @@ static inline int tail_signal_manager(struct flb_tail_config *ctx)
     return n;
 }
 
-static inline int tail_signal_pending(struct flb_tail_config *ctx)
+static inline int tail_signal_pending(struct flb_tailx_config *ctx)
 {
     int n;
     uint64_t val = 0xc002;
@@ -76,7 +76,7 @@ static inline int tail_signal_pending(struct flb_tail_config *ctx)
     return n;
 }
 
-static inline int tail_consume_pending(struct flb_tail_config *ctx)
+static inline int tail_consume_pending(struct flb_tailx_config *ctx)
 {
     int ret;
     uint64_t val;

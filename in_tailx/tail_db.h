@@ -26,19 +26,19 @@
 
 #include "tail_file.h"
 
-struct flb_sqldb *flb_tail_db_open(const char *path,
+struct flb_sqldb *flb_tailx_db_open(const char *path,
                                    struct flb_input_instance *in,
-                                   struct flb_tail_config *ctx,
+                                   struct flb_tailx_config *ctx,
                                    struct flb_config *config);
 
-int flb_tail_db_close(struct flb_sqldb *db);
-int flb_tail_db_file_set(struct flb_tail_file *file,
-                         struct flb_tail_config *ctx);
-int flb_tail_db_file_offset(struct flb_tail_file *file,
-                            struct flb_tail_config *ctx);
-int flb_tail_db_file_rotate(const char *new_name,
-                            struct flb_tail_file *file,
-                            struct flb_tail_config *ctx);
-int flb_tail_db_file_delete(struct flb_tail_file *file,
-                            struct flb_tail_config *ctx);
+int flb_tailx_db_close(struct flb_sqldb *db);
+int flb_tailx_db_file_set(struct flb_tailx_file *file,
+                         struct flb_tailx_config *ctx);
+int flb_tailx_db_file_offset(struct flb_tailx_file *file,
+                            struct flb_tailx_config *ctx);
+int flb_tailx_db_file_rotate(const char *new_name,
+                            struct flb_tailx_file *file,
+                            struct flb_tailx_config *ctx);
+int flb_tailx_db_file_delete(struct flb_tailx_file *file,
+                            struct flb_tailx_config *ctx);
 #endif
