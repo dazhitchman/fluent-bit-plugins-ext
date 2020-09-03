@@ -5,7 +5,9 @@ set(src
   tail_config.c
   tail_fs.c
   tail.c
-        tail_multiline.c)
+        tail_multiline.c
+        tail_db.c
+        )
 
 if(FLB_SQLDB)
 set(src

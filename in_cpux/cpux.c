@@ -17,7 +17,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+//#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #include <fluent-bit/flb_info.h>
 #include <fluent-bit/flb_input.h>
@@ -401,7 +401,7 @@ static int cb_cpux_collect(struct flb_input_instance *ins,
     ctx->procstats=list;
 
 
-    printf("Writing data bytes=%ull\n", mp_sbuf.size);
+    printf("Writing data bytes=%zu\n", mp_sbuf.size);
     flb_input_chunk_append_raw(ins, NULL, 0, mp_sbuf.data, mp_sbuf.size);
     msgpack_sbuffer_destroy(&mp_sbuf);
 

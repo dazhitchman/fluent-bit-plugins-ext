@@ -5,11 +5,8 @@ set(PLUGIN_NAME in_metadata)
 
 include_directories(include)
 
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
-else()
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__FILENAME__=__FILE__")
-endif()
+add_compile_definitions(__FILENAME__=__FILE__)
+
 
 # Macro to build source code
 macro(FLB_PLUGIN name src deps)
